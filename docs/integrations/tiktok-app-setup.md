@@ -58,12 +58,11 @@ Define these variables in `.env` (local) and secret-managed environment config (
 TIKTOK_CLIENT_ID=your_tiktok_client_id
 TIKTOK_CLIENT_SECRET=your_tiktok_client_secret
 TIKTOK_REDIRECT_URI=https://influence-me.test/auth/tiktok/callback
-TIKTOK_SCOPES=user.info.basic,user.info.profile,user.info.stats,video.list
 ```
 
 Where they are consumed in the RFC roadmap:
 - `TIKTOK_CLIENT_ID`, `TIKTOK_CLIENT_SECRET`, `TIKTOK_REDIRECT_URI`: `config/services.php` in RFC `075`
-- `TIKTOK_SCOPES`: TikTok OAuth redirect flow (RFC `089`)
+- TikTok OAuth scopes are hardcoded in `App\Enums\SocialNetwork::oauthScopes()` for read-only account details/stats
 - Access and refresh tokens returned by TikTok OAuth: TikTok account persistence and sync workflows (RFC `076`, `081`, `086`)
 
 ## 5. Security Notes
@@ -92,7 +91,7 @@ Before moving production TikTok auth live:
 - Confirm callback route path is `/auth/tiktok/callback` in all environments.
 
 ### `insufficient_scope`
-- Confirm all scopes in `TIKTOK_SCOPES` are requested in OAuth redirect.
+- Confirm OAuth redirect requests read-only scopes: `user.info.basic`, `user.info.profile`, `user.info.stats`.
 - Confirm production app review approved the required scopes.
 
 ### Sandbox login succeeds but production fails

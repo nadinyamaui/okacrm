@@ -18,7 +18,9 @@ use App\Enums\ProposalStatus;
 use App\Enums\ScheduledPostStatus;
 use App\Enums\SocialNetwork;
 use App\Enums\SyncStatus;
+use App\Services\Auth\SocialiteClient;
 use App\Services\SocialMedia\Instagram\Client as InstagramClient;
+use App\Services\SocialMedia\Tiktok\Client as TikTokClient;
 
 it('defines all media type enum cases', function (): void {
     expect(MediaType::cases())->toHaveCount(3)
@@ -221,6 +223,11 @@ it('defines all social network enum cases', function (): void {
         ->and(SocialNetwork::Twitch->value)->toBe('twitch');
 });
 
+it('provides account connection redirect routes for social networks', function (): void {
+    expect(SocialNetwork::Instagram->accountConnectionRedirectRoute())->toBe('instagram-accounts.index')
+        ->and(SocialNetwork::Tiktok->accountConnectionRedirectRoute())->toBe('dashboard');
+});
+
 it('builds the instagram socialite client from social network enum', function (): void {
     $instagramClient = Mockery::mock(InstagramClient::class);
     app()->bind(InstagramClient::class, fn (): InstagramClient => $instagramClient);
@@ -230,9 +237,19 @@ it('builds the instagram socialite client from social network enum', function ()
     expect($client)->toBe($instagramClient);
 });
 
+it('builds the tiktok socialite client from social network enum', function (): void {
+    $tiktokClient = Mockery::mock(TikTokClient::class);
+    app()->bind(TikTokClient::class, fn (): TikTokClient => $tiktokClient);
+
+    $client = SocialNetwork::Tiktok->socialiteClient('access-token', 'user-id');
+
+    expect($client)->toBe($tiktokClient)
+        ->and($client)->toBeInstanceOf(SocialiteClient::class);
+});
+
 it('throws when socialite client is requested for unsupported social network', function (): void {
-    SocialNetwork::Tiktok->socialiteClient('access-token', 'user-id');
-})->throws(\LogicException::class, 'TikTok social login client is not configured.');
+    SocialNetwork::Youtube->socialiteClient('access-token', 'user-id');
+})->throws(\LogicException::class, 'YouTube social login client is not configured.');
 
 it('defines all sync status enum cases', function (): void {
     expect(SyncStatus::cases())->toHaveCount(3)

@@ -44,7 +44,7 @@ return [
     'tiktok' => [
         'client_id' => env('TIKTOK_CLIENT_ID'),
         'client_secret' => env('TIKTOK_CLIENT_SECRET'),
-        'redirect' => '/auth/tiktok/callback',
+        'redirect' => env('TIKTOK_REDIRECT_URI', '/auth/tiktok/callback'),
         'base_url' => env('TIKTOK_API_BASE_URL', 'https://open.tiktokapis.com'),
         'timeout' => (int) env('TIKTOK_API_TIMEOUT', 10),
         'retry_times' => (int) env('TIKTOK_API_RETRY_TIMES', 3),

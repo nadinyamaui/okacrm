@@ -11,9 +11,10 @@ it('renders social oauth login buttons for all social networks', function (): vo
 
     $response->assertOk();
     $response->assertSee(route('social.auth', ['provider' => SocialNetwork::Instagram]));
+    $response->assertSee(route('social.auth', ['provider' => SocialNetwork::Tiktok]));
 
     foreach (SocialNetwork::cases() as $network) {
-        if ($network === SocialNetwork::Instagram) {
+        if (in_array($network, [SocialNetwork::Instagram, SocialNetwork::Tiktok], true)) {
             $response->assertSee("Continue with {$network->label()}");
 
             continue;
@@ -44,6 +45,29 @@ it('redirects to the facebook socialite provider', function (): void {
     $response = $this->get(route('social.auth', ['provider' => SocialNetwork::Instagram]));
 
     $response->assertRedirect('https://www.facebook.com/v18.0/dialog/oauth');
+    $response->assertSessionHas('social_account_auth_intent', 'login');
+});
+
+it('redirects to the tiktok socialite provider', function (): void {
+    Socialite::shouldReceive('driver')
+        ->once()
+        ->with('tiktok')
+        ->andReturnSelf();
+    Socialite::shouldReceive('scopes')
+        ->once()
+        ->with([
+            'user.info.basic',
+            'user.info.profile',
+            'user.info.stats',
+        ])
+        ->andReturnSelf();
+    Socialite::shouldReceive('redirect')
+        ->once()
+        ->andReturn(redirect('https://www.tiktok.com/v2/auth/authorize'));
+
+    $response = $this->get(route('social.auth', ['provider' => SocialNetwork::Tiktok]));
+
+    $response->assertRedirect('https://www.tiktok.com/v2/auth/authorize');
     $response->assertSessionHas('social_account_auth_intent', 'login');
 });
 

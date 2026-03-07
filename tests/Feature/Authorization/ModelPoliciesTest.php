@@ -8,12 +8,12 @@ use App\Models\CatalogPlanItem;
 use App\Models\CatalogProduct;
 use App\Models\Client;
 use App\Models\ClientUser;
-use App\Models\SocialAccountMedia;
 use App\Models\Invoice;
 use App\Models\Proposal;
 use App\Models\ProposalLineItem;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
+use App\Models\SocialAccountMedia;
 use App\Models\TaxRate;
 use App\Models\User;
 use App\Policies\CampaignPolicy;
@@ -21,11 +21,11 @@ use App\Policies\CatalogPlanItemPolicy;
 use App\Policies\CatalogPlanPolicy;
 use App\Policies\CatalogProductPolicy;
 use App\Policies\ClientPolicy;
-use App\Policies\SocialAccountMediaPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\ProposalLineItemPolicy;
 use App\Policies\ProposalPolicy;
 use App\Policies\ScheduledPostPolicy;
+use App\Policies\SocialAccountMediaPolicy;
 use App\Policies\SocialAccountPolicy;
 use App\Policies\TaxRatePolicy;
 use Illuminate\Support\Facades\Gate;
@@ -253,6 +253,7 @@ it('applies invoice policy rules', function (): void {
 
     $draftInvoice = Invoice::factory()->for($owner)->for($client)->draft()->create();
     $sentInvoice = Invoice::factory()->for($owner)->for($client)->sent()->create();
+    $overdueInvoice = Invoice::factory()->for($owner)->for($client)->overdue()->create();
 
     $matchingClientUser = ClientUser::factory()->for($client)->create();
     $mismatchedClientUser = ClientUser::factory()->for($otherClient)->create();
@@ -267,16 +268,21 @@ it('applies invoice policy rules', function (): void {
         ->and($ownerGate->allows('view', $draftInvoice))->toBeTrue()
         ->and($ownerGate->allows('update', $draftInvoice))->toBeTrue()
         ->and($ownerGate->allows('delete', $draftInvoice))->toBeTrue()
+        ->and($ownerGate->allows('send', $draftInvoice))->toBeTrue()
+        ->and($ownerGate->allows('send', $sentInvoice))->toBeTrue()
+        ->and($ownerGate->allows('send', $overdueInvoice))->toBeTrue()
         ->and($ownerGate->allows('update', $sentInvoice))->toBeFalse()
         ->and($ownerGate->allows('delete', $sentInvoice))->toBeFalse()
         ->and($outsiderGate->allows('view', $draftInvoice))->toBeFalse()
         ->and($outsiderGate->allows('update', $draftInvoice))->toBeFalse()
         ->and($outsiderGate->allows('delete', $draftInvoice))->toBeFalse()
+        ->and($outsiderGate->allows('send', $draftInvoice))->toBeFalse()
         ->and($matchingClientUserGate->allows('viewAny', Invoice::class))->toBeTrue()
         ->and($matchingClientUserGate->allows('view', $draftInvoice))->toBeTrue()
         ->and($matchingClientUserGate->allows('create', Invoice::class))->toBeFalse()
         ->and($matchingClientUserGate->allows('update', $draftInvoice))->toBeFalse()
         ->and($matchingClientUserGate->allows('delete', $draftInvoice))->toBeFalse()
+        ->and($matchingClientUserGate->allows('send', $draftInvoice))->toBeFalse()
         ->and($mismatchedClientUserGate->allows('view', $draftInvoice))->toBeFalse();
 
     expect($sentInvoice->status)->toBe(InvoiceStatus::Sent);
@@ -425,6 +431,25 @@ it('returns 403 for unauthorized invoice update', function (): void {
 
     Route::middleware(['web', 'auth'])->get($uri, function () use ($invoice) {
         Gate::authorize('update', $invoice);
+
+        return response()->noContent();
+    });
+
+    $this->actingAs($outsider)
+        ->get($uri)
+        ->assertForbidden();
+});
+
+it('returns 403 for unauthorized invoice send', function (): void {
+    $owner = User::factory()->create();
+    $outsider = User::factory()->create();
+
+    $client = Client::factory()->for($owner)->create();
+    $invoice = Invoice::factory()->for($owner)->for($client)->draft()->create();
+    $uri = '/_test/policies/invoices-send/'.Str::uuid();
+
+    Route::middleware(['web', 'auth'])->get($uri, function () use ($invoice) {
+        Gate::authorize('send', $invoice);
 
         return response()->noContent();
     });

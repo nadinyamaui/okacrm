@@ -41,4 +41,11 @@ class InvoicePolicy
             && $user->id === $invoice->user_id
             && $invoice->status === InvoiceStatus::Draft;
     }
+
+    public function send(User|ClientUser $user, Invoice $invoice): bool
+    {
+        return $user instanceof User
+            && $user->id === $invoice->user_id
+            && in_array($invoice->status, [InvoiceStatus::Draft, InvoiceStatus::Sent, InvoiceStatus::Overdue], true);
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Services\SocialMedia\Instagram;
 
 use App\Enums\MediaType;
 use App\Enums\SocialNetwork;
+use App\Services\Auth\SocialiteClient;
 use FacebookAds\Api;
 use FacebookAds\Object\IGMedia;
 use FacebookAds\Object\IGUser;
@@ -12,7 +13,7 @@ use FacebookAds\Object\Page;
 use FacebookAds\Object\User;
 use Illuminate\Support\Collection;
 
-class Client
+class Client implements SocialiteClient
 {
     protected Api $api;
 

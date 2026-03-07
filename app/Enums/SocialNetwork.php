@@ -2,7 +2,9 @@
 
 namespace App\Enums;
 
+use App\Services\Auth\SocialiteClient;
 use App\Services\SocialMedia\Instagram\Client as InstagramClient;
+use App\Services\SocialMedia\Tiktok\Client as TikTokClient;
 use LogicException;
 
 enum SocialNetwork: string
@@ -15,6 +17,11 @@ enum SocialNetwork: string
     public function oauthScopes(): array
     {
         return match ($this) {
+            self::Tiktok => [
+                'user.info.basic',
+                'user.info.profile',
+                'user.info.stats',
+            ],
             self::Instagram => [
                 'instagram_basic',
                 'instagram_manage_insights',
@@ -43,10 +50,22 @@ enum SocialNetwork: string
         };
     }
 
-    public function socialiteClient(string $accessToken, ?string $userId = null): InstagramClient
+    public function accountConnectionRedirectRoute(): string
+    {
+        return match ($this) {
+            self::Instagram => 'instagram-accounts.index',
+            default => 'dashboard',
+        };
+    }
+
+    public function socialiteClient(string $accessToken, ?string $userId = null): SocialiteClient
     {
         return match ($this) {
             self::Instagram => app()->make(InstagramClient::class, [
+                'access_token' => $accessToken,
+                'user_id' => $userId,
+            ]),
+            self::Tiktok => app()->make(TikTokClient::class, [
                 'access_token' => $accessToken,
                 'user_id' => $userId,
             ]),

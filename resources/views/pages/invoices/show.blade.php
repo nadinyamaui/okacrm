@@ -5,6 +5,12 @@
         </div>
     @endif
 
+    @if ($errors->has('send'))
+        <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800 dark:border-rose-900/40 dark:bg-rose-950/50 dark:text-rose-200">
+            {{ $errors->first('send') }}
+        </div>
+    @endif
+
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
             <h1 class="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Invoice {{ $invoice->invoice_number }}</h1>
@@ -18,43 +24,69 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-            <flux:button :href="route('invoices.index')" variant="filled" wire:navigate>
-                Back
+            <flux:button :href="route('invoices.index')" variant="filled" title="Back to invoices" aria-label="Back to invoices" wire:navigate>
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
             </flux:button>
 
             @if ($isDraft)
-                <flux:button :href="route('invoices.edit', $invoice)" variant="filled" wire:navigate>
-                    Edit
+                <flux:button :href="route('invoices.edit', $invoice)" variant="filled" title="Edit invoice" aria-label="Edit invoice" wire:navigate>
+                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                 </flux:button>
-                <flux:button type="button" variant="primary" disabled>
-                    Send to Client
+                <flux:button
+                    type="button"
+                    variant="primary"
+                    title="Send invoice to client"
+                    aria-label="Send invoice to client"
+                    wire:click="send"
+                    wire:confirm="Send invoice {{ $invoice->invoice_number }} (${{ number_format((float) $invoice->total, 2) }}) to {{ $invoice->client?->name ?? 'this client' }} at {{ $invoice->client?->email ?? 'no email' }}?"
+                >
+                    <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
                 </flux:button>
                 <flux:button
                     type="button"
                     variant="filled"
+                    title="Delete invoice"
+                    aria-label="Delete invoice"
                     class="border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-200 dark:hover:bg-rose-950/40"
                     wire:click="delete"
                     wire:confirm="Are you sure you want to delete invoice {{ $invoice->invoice_number }}?"
                 >
-                    Delete
+                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
                 </flux:button>
             @elseif ($isSent)
-                <flux:button type="button" variant="primary" disabled>
-                    Generate Payment Link
+                <flux:button type="button" variant="primary" title="Generate payment link" aria-label="Generate payment link" disabled>
+                    <i class="fa-solid fa-link" aria-hidden="true"></i>
                 </flux:button>
-                <flux:button type="button" variant="filled" disabled>
-                    Resend
+                <flux:button
+                    type="button"
+                    variant="filled"
+                    title="Resend invoice"
+                    aria-label="Resend invoice"
+                    wire:click="resend"
+                    wire:confirm="Resend invoice {{ $invoice->invoice_number }} (${{ number_format((float) $invoice->total, 2) }}) to {{ $invoice->client?->name ?? 'this client' }} at {{ $invoice->client?->email ?? 'no email' }}?"
+                >
+                    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
                 </flux:button>
             @elseif ($isPaid)
                 <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
                     Paid {{ $invoice->paid_at?->format('M j, Y') ?? '' }}
                 </span>
             @elseif ($isOverdue)
-                <flux:button type="button" variant="filled" disabled>
-                    Send Reminder
+                <flux:button type="button" variant="filled" title="Send reminder" aria-label="Send reminder" disabled>
+                    <i class="fa-solid fa-bell" aria-hidden="true"></i>
                 </flux:button>
-                <flux:button type="button" variant="primary" disabled>
-                    Generate Payment Link
+                <flux:button type="button" variant="primary" title="Generate payment link" aria-label="Generate payment link" disabled>
+                    <i class="fa-solid fa-link" aria-hidden="true"></i>
+                </flux:button>
+                <flux:button
+                    type="button"
+                    variant="filled"
+                    title="Resend invoice"
+                    aria-label="Resend invoice"
+                    wire:click="resend"
+                    wire:confirm="Resend invoice {{ $invoice->invoice_number }} (${{ number_format((float) $invoice->total, 2) }}) to {{ $invoice->client?->name ?? 'this client' }} at {{ $invoice->client?->email ?? 'no email' }}?"
+                >
+                    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
                 </flux:button>
             @endif
         </div>
@@ -73,7 +105,15 @@
             <article>
                 <h2 class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-300">To</h2>
                 <div class="mt-2 space-y-1 text-sm text-zinc-700 dark:text-zinc-200">
-                    <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ $invoice->client?->name ?? '—' }}</p>
+                    <p class="font-medium text-zinc-900 dark:text-zinc-100">
+                        @if ($invoice->client)
+                            <a href="{{ route('clients.show', $invoice->client) }}" class="hover:underline" wire:navigate>
+                                {{ $invoice->client->name }}
+                            </a>
+                        @else
+                            —
+                        @endif
+                    </p>
                     <p>{{ $invoice->client?->company_name ?? '—' }}</p>
                     <p>{{ $invoice->client?->email ?? '—' }}</p>
                 </div>
@@ -91,14 +131,18 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-                    @foreach ($invoice->items as $item)
+                    @forelse ($invoice->items as $item)
                         <tr wire:key="invoice-preview-item-{{ $item->id }}">
                             <td class="px-3 py-3 text-zinc-900 dark:text-zinc-100">{{ $item->description }}</td>
                             <td class="px-3 py-3 text-right text-zinc-700 dark:text-zinc-200">{{ number_format((float) $item->quantity, 2) }}</td>
                             <td class="px-3 py-3 text-right text-zinc-700 dark:text-zinc-200">${{ number_format((float) $item->unit_price, 2) }}</td>
                             <td class="px-3 py-3 text-right text-zinc-900 dark:text-zinc-100">${{ number_format((float) $item->total, 2) }}</td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="4" class="px-3 py-4 text-center text-zinc-600 dark:text-zinc-300">No line items.</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

@@ -83,9 +83,9 @@ test('draft invoice preview shows draft actions', function (): void {
     $this->actingAs($user)
         ->get(route('invoices.show', $invoice))
         ->assertSuccessful()
-        ->assertSee('Edit')
-        ->assertSee('Send to Client')
-        ->assertSee('Delete');
+        ->assertSee('title="Edit invoice"', false)
+        ->assertSee('title="Send invoice to client"', false)
+        ->assertSee('title="Delete invoice"', false);
 });
 
 test('sent invoice preview shows sent actions', function (): void {
@@ -96,9 +96,9 @@ test('sent invoice preview shows sent actions', function (): void {
     $this->actingAs($user)
         ->get(route('invoices.show', $invoice))
         ->assertSuccessful()
-        ->assertSee('Generate Payment Link')
-        ->assertSee('Resend')
-        ->assertDontSee('Delete');
+        ->assertSee('title="Generate payment link"', false)
+        ->assertSee('title="Resend invoice"', false)
+        ->assertDontSee('title="Delete invoice"', false);
 });
 
 test('paid invoice preview shows paid state with date', function (): void {
@@ -123,8 +123,8 @@ test('overdue invoice preview shows overdue actions', function (): void {
     $this->actingAs($user)
         ->get(route('invoices.show', $invoice))
         ->assertSuccessful()
-        ->assertSee('Send Reminder')
-        ->assertSee('Generate Payment Link');
+        ->assertSee('title="Send reminder"', false)
+        ->assertSee('title="Generate payment link"', false);
 });
 
 test('owner can delete draft invoice from preview page', function (): void {

@@ -27,7 +27,9 @@ class SocialAuthController extends Controller
     {
         $request->session()->put('social_account_auth_intent', 'add_account');
 
-        return $this->loginService->redirectToProvider();
+        return $this->loginService
+            ->usingDriver(SocialNetwork::Instagram)
+            ->redirectToProvider();
     }
 
     public function callback(Request $request, SocialNetwork $provider): RedirectResponse
@@ -41,7 +43,7 @@ class SocialAuthController extends Controller
                 $loginService->createSocialAccountsForLoggedUser();
 
                 return redirect()
-                    ->route('instagram-accounts.index')
+                    ->route($provider->accountConnectionRedirectRoute())
                     ->with('status', 'Instagram accounts connected successfully.');
             }
 
@@ -53,7 +55,7 @@ class SocialAuthController extends Controller
 
             if ($isAddAccountFlow) {
                 return redirect()
-                    ->route('instagram-accounts.index')
+                    ->route($provider->accountConnectionRedirectRoute())
                     ->withErrors(['oauth' => $exception->getMessage()]);
             }
 
@@ -65,7 +67,7 @@ class SocialAuthController extends Controller
 
             if ($isAddAccountFlow) {
                 return redirect()
-                    ->route('instagram-accounts.index')
+                    ->route($provider->accountConnectionRedirectRoute())
                     ->withErrors(['oauth' => "Unable to connect {$loginService->driverLabel()} accounts. Please try again."]);
             }
 

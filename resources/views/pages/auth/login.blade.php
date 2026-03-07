@@ -59,7 +59,7 @@
 
         <div class="flex flex-col gap-3">
             @foreach (\App\Enums\SocialNetwork::cases() as $network)
-                @if ($network === \App\Enums\SocialNetwork::Instagram)
+                @if (in_array($network, [\App\Enums\SocialNetwork::Instagram, \App\Enums\SocialNetwork::Tiktok], true))
                     <flux:button :href="route('social.auth', ['provider' => $network])" variant="primary" class="w-full" data-test="{{ $network->value }}-login-button">
                         {{ __('Continue with :network', ['network' => $network->label()]) }}
                     </flux:button>
